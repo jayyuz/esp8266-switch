@@ -24,6 +24,18 @@
 
 #include "esp_common.h"
 
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+
+#include "lwip/sockets.h"
+#include "lwip/dns.h"
+#include "lwip/netdb.h"
+#include "espressif/espconn.h"
+#include "espressif/airkiss.h"
+
+#include "gpio.h"
+#include "../include/uart.h"
+#include "conn_ap.h"
 /******************************************************************************
  * FunctionName : user_rf_cal_sector_set
  * Description  : SDK just reversed 4 sectors, used for rf init data and paramters.
@@ -76,5 +88,7 @@ uint32 user_rf_cal_sector_set(void) {
 void user_init(void) {
 	uart_init_new();
 	printf("SDK version:%s\n", system_get_sdk_version());
+	gpio16_output_conf();
+	conn_AP_Init();
 }
 
