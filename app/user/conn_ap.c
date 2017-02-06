@@ -80,7 +80,9 @@ void wifi_handle_event_cb(System_Event_t *evt) {
 		break;
 	}
 }
-
+/**
+ * Á¬½ÓÍøÂç
+ */
 void conn_AP_Init(void) {
 	wifi_set_opmode(STATIONAP_MODE);
 	struct station_config config;

@@ -75,7 +75,6 @@ uint32 user_rf_cal_sector_set(void) {
 		rf_cal_sec = 0;
 		break;
 	}
-
 	return rf_cal_sec;
 }
 

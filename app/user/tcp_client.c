@@ -6,6 +6,9 @@
 #include "esp_common.h"
 #include "espconn.h"
 #include "cJSON.h"
+#include "freertos/timers.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
 
 #define DEMO_AP_SSID      "Apple"
 #define DEMO_AP_PASSWORD "ILoveApple"
@@ -28,6 +31,31 @@ char *sessionId = "123456789", *out, *in;
 int i, sequence = 1; /* declare a few. */
 bool devState = true;
 bool isLogin = false;
+void devSendState(void *arg);
+xTimerHandle xTimerUser; // 定义句柄
+// An array to hold a count of the number of times each timer expires.
+long lExpireCounters[1] = { 0 };
+void vTimerCallback(xTimerHandle pxTimer) {
+	long lArrayIndex;
+	const long xMaxExpiryCountBeforeStopping = 10;
+
+	// Optionally do something if the pxTimer parameter is NULL.
+	configASSERT( pxTimer );
+
+//	// Which timer expired?
+//	lArrayIndex = (long) pvTimerGetTimerID(pxTimer);
+//
+//	// Increment the number of times that pxTimer has expired.
+//	lExpireCounters[lArrayIndex] += 1;
+//
+//	// If the timer has expired 10 times then stop it from running.
+//	if (lExpireCounters[lArrayIndex] == xMaxExpiryCountBeforeStopping) {
+//		// Do not use a block time if calling a timer API function from a
+//		// timer callback function, as doing so could cause a deadlock!
+//		xTimerStop(pxTimer, 0);
+//	}
+	printf("%s\n", "这是系统定时器");
+}
 
 void devLogin() {
 	smpkg = cJSON_CreateObject();
@@ -104,6 +132,21 @@ void TcpClientConnect(void*arg) {
 	espconn_send(tcp_server_local, out, strlen(out));
 	cJSON_Delete(smpkg);
 	free(out);
+
+	xTimerUser = xTimerCreate("Timer", // Just a text name, not used by the kernel.
+			(100 * 1),     // The timer period in ticks.
+			pdTRUE,  // The timers will auto-reload themselves when they expire.
+			(void *) 1, // Assign each timer a unique id equal to its array index.
+			vTimerCallback // Each timer calls the same callback when it expires.
+			);
+	if (xTimerUser != NULL) {
+		// Start the timer.  No block time is specified, and even if one was
+		// it would be ignored because the scheduler has not yet been
+		// started.
+		if ( xTimerStart(xTimerUser, 0 ) != pdPASS) {
+			// The timer could not be set into the Active state.
+		}
+	}
 }
 
 void TcpClientDisConnect(void* arg) {
@@ -285,3 +328,4 @@ void WifiConfig(void* arg) {
 	StaConectApConfig(DEMO_AP_SSID, DEMO_AP_PASSWORD);
 	vTaskDelete(NULL);
 }
+
