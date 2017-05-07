@@ -1,4 +1,4 @@
-
+﻿
 #############################################################
 # Required variables for each makefile
 # Discard this section from all parent makefiles

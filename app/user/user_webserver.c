@@ -1,4 +1,4 @@
-/******************************************************************************
+Ôªø/******************************************************************************
  * Copyright (C) 2014 -2016  Espressif System
  *
  * FileName: user_webserver.c
@@ -98,7 +98,7 @@ LOCAL uint32 dat_sumlength; //could be removed Jeremy
 //		"HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nContent-Length:244\r\n\r\n";
 //LOCAL char *content =
 //		"HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nContent-Length:244\r\n\r\n"
-//				"<html><span style=\"white-space:pre\"></span><title>LOGIN</title><body><form method=\"get\" action='WiFi.cgi'>SSID:<input type='text' name='ssid'><br>√‹¬Î:<input type='password' name='password'><br><input type='submit'value='»∑»œ'></form></body></html>";
+//				"<html><span style=\"white-space:pre\"></span><title>LOGIN</title><body><form method=\"get\" action='WiFi.cgi'>SSID:<input type='text' name='ssid'><br>ÂØÜÁ†Å:<input type='password' name='password'><br><input type='submit'value='Á°ÆËÆ§'></form></body></html>";
 
 /******************************************************************************
  * FunctionName : user_binfo_get
@@ -1567,7 +1567,7 @@ LOCAL void webserver_recvdata_process(
 				} else {
 					p1 += strlen("?");
 					memcpy(dest, p1, p2 - p1);
-					printf("Value£∫%s\n", dest);
+					printf("ValueÔºö%s\n", dest);
 					char *delim = "&";
 					char *delim2 = "=";
 					char *p;

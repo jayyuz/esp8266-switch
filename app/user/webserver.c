@@ -1,11 +1,11 @@
-/*
+ï»¿/*
  * webserver.c
  *
- *  Created on: 2017Äê2ÔÂ8ÈÕ
+ *  Created on: 2017å¹´2æœˆ8æ—¥
  *      Author: Jaesoon
  */
 //unsigned char *header =
 //		"HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nContent-Length:249\r\n\r\n";
 //unsigned char *content =
-//		"<html><span style=\"white-space:pre\"></span><title>LOGIN</title><body><form method='get' action='Login.cgi'>SSID:<input type='text' name='username'><br>ÃÜÂë:<input type='password' name='password'><br><input type='submit'value='µÇÂ¼'></form></body></html>";
+//		"<html><span style=\"white-space:pre\"></span><title>LOGIN</title><body><form method='get' action='Login.cgi'>SSID:<input type='text' name='username'><br>å¯†ç :<input type='password' name='password'><br><input type='submit'value='ç™»å½•'></form></body></html>";
 //unsigned char *end = "0\r\n\r\n";

@@ -1,4 +1,4 @@
-/*
+﻿/*
  * ESPRSSIF MIT License
  *
  * Copyright (c) 2015 <ESPRESSIF SYSTEMS (SHANGHAI) PTE LTD>
@@ -92,25 +92,25 @@ void user_gpio_init() {
  *******************************************************************************/
 void user_init(void) {
 	uart_init_new();
-	//ע�⣬һ��Ҫ������ط���ʼ��spiffs����Ȼ��������
+	//注意，一定要在这个地方初始化spiffs，不然会有问题
 	spiffs_fs1_init();
 
 	printf("SDK version:%s\n", system_get_sdk_version());
 
 	user_gpio_init();
 
-	/* ������һ������ ��Ҫ˵������һ��ʵ�õ�Ӧ�ó�����Ӧ����⺯��xTaskCreate()�ķ���ֵ�� ��ȷ����
-	 �񴴽��ɹ��� */
-	xTaskCreate(keyTask, /* ָ����������ָ�� */
-	"key task",/* ������ı����֣�ֻ���ڵ������õ� */
-	1000,/* ջ��� �C �����С��΢��������ʹ�õ�ֵ��ȴ�ֵС�ö� */
-	NULL,/* û��������� */
-	1,/* ���������������ȼ�1��. */
-	NULL /* �����õ������� */
+	/* 创建第一个任务。 需要说明的是一个实用的应用程序中应当检测函数xTaskCreate()的返回值， 以确保任
+	 务创建成功。 */
+	xTaskCreate(keyTask, /* 指向任务函数的指针 */
+	"key task",/* 任务的文本名字，只会在调试中用到 */
+	1000,/* 栈深度 – 大多数小型微控制器会使用的值会比此值小得多 */
+	NULL,/* 没有任务参数 */
+	1,/* 此任务运行在优先级1上. */
+	NULL /* 不会用到任务句柄 */
 	);
 	/* Create the other task in exactly the same way and*/
 
-	/* ����������������ʼִ�� */
+	/* 启动调度器，任务开始执行 */
 	//vTaskStartScheduler();
 
 	conn_AP_Init();

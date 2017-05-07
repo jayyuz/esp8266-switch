@@ -1,4 +1,4 @@
-/*
+Ôªø/*
  * ESPRSSIF MIT License
  *
  * Copyright (c) 2015 <ESPRESSIF SYSTEMS (SHANGHAI) PTE LTD>
@@ -140,7 +140,7 @@ void conn_ap(WiFi *wifi, WIFI_MODE wifiMode) {
 	}
 }
 /**
- * ¡¨Ω”Õ¯¬Á
+ * ËøûÊé•ÁΩëÁªú
  */
 void conn_AP_Init(void) {
 
@@ -157,7 +157,7 @@ void conn_AP_Init(void) {
 }
 
 /**
- * APƒ£ Ω
+ * APÊ®°Âºè
  */
 void soft_AP_Init(void) {
 	wifi_set_opmode(SOFTAP_MODE);
