@@ -36,13 +36,15 @@
 #include "gpio.h"
 #include "../include/uart.h"
 #include "conn_ap.h"
+#include "userspiffs.h"
+#include "user_key_task.h"
 /******************************************************************************
  * FunctionName : user_rf_cal_sector_set
  * Description  : SDK just reversed 4 sectors, used for rf init data and paramters.
  *                We add this function to force users to set rf cal sector, since
  *                we don't know which sector is free in user's application.
  *                sector map for last several sectors : ABCCC
- *                A : rf cal
+ *                A : rf cal=
  *                B : rf init data
  *                C : sdk parameters
  * Parameters   : none
@@ -78,6 +80,10 @@ uint32 user_rf_cal_sector_set(void) {
 	return rf_cal_sec;
 }
 
+void user_gpio_init() {
+	gpio16_output_conf();
+}
+
 /******************************************************************************
  * FunctionName : user_init
  * Description  : entry of user application, init user function here
@@ -86,8 +92,28 @@ uint32 user_rf_cal_sector_set(void) {
  *******************************************************************************/
 void user_init(void) {
 	uart_init_new();
+	//注意，一定要在这个地方初始化spiffs，不然会有问题
+	spiffs_fs1_init();
+
 	printf("SDK version:%s\n", system_get_sdk_version());
-	gpio16_output_conf();
+
+	user_gpio_init();
+
+	/* 创建第一个任务。 需要说明的是一个实用的应用程序中应当检测函数xTaskCreate()的返回值， 以确保任
+	 务创建成功。 */
+	xTaskCreate(keyTask, /* 指向任务函数的指针 */
+	"key task",/* 任务的文本名字，只会在调试中用到 */
+	1000,/* 栈深度 – 大多数小型微控制器会使用的值会比此值小得多 */
+	NULL,/* 没有任务参数 */
+	1,/* 此任务运行在优先级1上. */
+	NULL /* 不会用到任务句柄 */
+	);
+	/* Create the other task in exactly the same way and*/
+
+	/* 启动调度器，任务开始执行 */
+	//vTaskStartScheduler();
+
 	conn_AP_Init();
+
 }
 

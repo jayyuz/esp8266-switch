@@ -10,7 +10,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "spiffs.h"
 #include "spiffs_nucleus.h"
 
 #include "testrunner.h"
@@ -22,6 +21,8 @@
 #include <fcntl.h>
 //#include <dirent.h>
 #include <unistd.h>
+
+#include "../spiffs.h"
 #include "spiffs_test_params.h"
 
 //#define AREA(x) area[(x) - addr_offset]

@@ -1,8 +1,7 @@
 ﻿#include "../../app/user/tcp_client.h"
-
 #include "../../app/include/user_config.h"
 #include "c_types.h"
-
+#include "lwip/netdb.h"
 #include "esp_common.h"
 #include "espconn.h"
 #include "cJSON.h"
@@ -17,6 +16,7 @@
 #define SOFT_AP_PASSWORD "12345678"
 
 const unsigned char tcp_server_ip[4] = { 192, 168, 0, 133 };
+//#define TCP_SERVER_REMOTE_PORT (52353)
 #define TCP_SERVER_REMOTE_PORT (9999)
 #define TCP_CLIENT_GREETING "Hello!This is a tcp client test\n"
 
@@ -31,7 +31,25 @@ char *sessionId = "123456789", *out, *in;
 int i, sequence = 1; /* declare a few. */
 bool devState = true;
 bool isLogin = false;
+
+struct espconn* tcp_server_connection = NULL;
+
 void devSendState(void *arg);
+void devSendHeartBeat(void *arg);
+
+void devLogin() {
+	sequence = 1;
+	smpkg = cJSON_CreateObject();
+	cJSON_AddItemToObject(smpkg, "sequence",
+			cJSON_CreateNumber((double) sequence));
+	cJSON_AddItemToObject(smpkg, "content", content = cJSON_CreateObject());
+	cJSON_AddStringToObject(content, "Action", "DevLogin");
+	cJSON_AddStringToObject(content, "DevId", DEV_ID);
+	cJSON_AddStringToObject(content, "SN", DEV_SN);
+	sequence++;
+}
+
+//每4分钟发一个心跳包
 xTimerHandle xTimerUser; // 定义句柄
 // An array to hold a count of the number of times each timer expires.
 long lExpireCounters[1] = { 0 };
@@ -54,49 +72,61 @@ void vTimerCallback(xTimerHandle pxTimer) {
 //		// timer callback function, as doing so could cause a deadlock!
 //		xTimerStop(pxTimer, 0);
 //	}
-	printf("%s\n", "这是系统定时器");
+//	printf("%s\n", "Send HeartBeat");
+	if (tcp_server_connection != NULL)
+		if (isLogin) {
+			devSendHeartBeat(tcp_server_connection);
+		} else {
+			//
+			devLogin();
+		}
 }
 
-void devLogin() {
-	smpkg = cJSON_CreateObject();
-	cJSON_AddItemToObject(smpkg, "sequence",
-			cJSON_CreateNumber((double) sequence));
-	cJSON_AddItemToObject(smpkg, "content", content = cJSON_CreateObject());
-	cJSON_AddStringToObject(content, "Action", "DevLogin");
-	cJSON_AddStringToObject(content, "DevId", DEV_ID);
-	cJSON_AddStringToObject(content, "SN", DEV_SN);
-	sequence = 2;
-}
 
-void devSendState(void *arg) {
+
+void devSendHeartBeat(void *arg) {
 	cJSON *smpkg, *content, *devContent;
 	char *out;
-	printf("%d\n", 5);
+//	printf("%s\n", "Send HeartBeat");
 	smpkg = cJSON_CreateObject();
-	printf("%d\n", 6);
 	cJSON_AddItemToObject(smpkg, "sequence",
 			cJSON_CreateNumber((double) sequence));
-	printf("%d\n", 7);
 	cJSON_AddStringToObject(smpkg, "sessionId", sessionId);
-	printf("%d\n", 8);
 	cJSON_AddItemToObject(smpkg, "content", content = cJSON_CreateObject());
-	cJSON_AddStringToObject(content, "Action", "PushToUser");
-	cJSON_AddStringToObject(content, "DevId", DEV_ID);
-	//设备需要发送的内容
-	printf("%d\n", 9);
-	cJSON_AddItemToObject(content, "Content", devContent =
-			cJSON_CreateObject());
-	cJSON_AddBoolToObject(devContent, "state", devState);
-
+	cJSON_AddStringToObject(content, "Action", "HeartBeat");
 	out = cJSON_Print(smpkg);
 	strcat(out, "&$$&");
-	printf("%s\n", out);
+//	printf("%s\n", out);
 	espconn_send(arg, out, strlen(out));
 
 	free(out);
 	sequence++;
 	cJSON_Delete(smpkg);
 
+}
+
+void devSendState(void *arg) {
+	cJSON *smpkg, *content, *devContent;
+	char *out;
+	smpkg = cJSON_CreateObject();
+	cJSON_AddItemToObject(smpkg, "sequence",
+			cJSON_CreateNumber((double) sequence));
+	cJSON_AddStringToObject(smpkg, "sessionId", sessionId);
+	cJSON_AddItemToObject(smpkg, "content", content = cJSON_CreateObject());
+	cJSON_AddStringToObject(content, "Action", "PushToUser");
+	cJSON_AddStringToObject(content, "DevId", DEV_ID);
+	//设备需要发送的内容
+	cJSON_AddItemToObject(content, "Content", devContent =
+			cJSON_CreateObject());
+	cJSON_AddBoolToObject(devContent, "state", devState);
+
+	out = cJSON_Print(smpkg);
+	strcat(out, "&$$&");
+	espconn_send(arg, out, strlen(out));
+
+	free(out);
+	sequence++;
+	cJSON_Delete(smpkg);
 }
 
 /*--------------------------------------------------------------
@@ -128,13 +158,14 @@ void TcpClientConnect(void*arg) {
 	devLogin(); //构建请求包
 	out = cJSON_Print(smpkg);
 	strcat(out, "&$$&");
-	printf("%s\n", out);
+//	printf("%s\n", out);
 	espconn_send(tcp_server_local, out, strlen(out));
 	cJSON_Delete(smpkg);
 	free(out);
 
+	//每4分钟发一个心跳包
 	xTimerUser = xTimerCreate("Timer", // Just a text name, not used by the kernel.
-			(100 * 1),     // The timer period in ticks.
+			(100 * 60 * 4),     // The timer period in ticks.
 			pdTRUE,  // The timers will auto-reload themselves when they expire.
 			(void *) 1, // Assign each timer a unique id equal to its array index.
 			vTimerCallback // Each timer calls the same callback when it expires.
@@ -183,46 +214,41 @@ void TcpRecvCb(void *arg, char *pdata, unsigned short len) {
 			tcp_server_local->proto.tcp->remote_ip[2],
 			tcp_server_local->proto.tcp->remote_ip[3],
 			tcp_server_local->proto.tcp->remote_port, len);
+
+	tcp_server_connection = arg;
 	//espconn_send(tcp_server_local,pdata,len);
-	DBG_PRINT("msg:%s\n", pdata);
+	DBG_PRINT("Data get:%s\n", pdata);
 	if (strstr(pdata, "&$$&")) {
-		DBG_PRINT("msg:%d\n", 0);
+//		DBG_PRINT("msg:%d\n", 0);
 		smpkg = cJSON_Parse(pdata);
 		if (smpkg != NULL) {
-			DBG_PRINT("msg:%d\n", 1);
+//			DBG_PRINT("msg:%d\n", 1);
 			Sequence = cJSON_GetObjectItem(smpkg, "sequence");
 			if (Sequence->valueint == 1) {
-				DBG_PRINT("msg:%d\n", 2);
 				//login
 				SessionId = cJSON_GetObjectItem(smpkg, "sessionId");
 				if (SessionId != NULL) {
-					sessionId = SessionId->valuestring;
+					strcpy(sessionId, SessionId->valuestring);
 					isLogin = true;
-					DBG_LINES("Login Succed");
 				} else {
-					DBG_LINES("Login Failed");
+
 				}
 				devSendState(tcp_server_local);
 			} else if (Sequence->valueint == 0) {
-				DBG_PRINT("msg:%d\n", 3);
+//				DBG_PRINT("msg:%d\n", 3);
 				content = cJSON_GetObjectItem(smpkg, "content");
 				if (content != NULL) {
-					printf("%d\n", 2);
 					action = cJSON_GetObjectItem(content, "Action");
 					if (action != NULL) {
-						printf("%d\n", 3);
-						printf("%s\n", action->valuestring);
 						if (strcmp("ServerPushToDev", action->valuestring)
 								== 0) {
 							devContent = cJSON_GetObjectItem(content,
 									"Content");
 							if (devContent != NULL) {
-								printf("%d\n", 4);
 								devstate = cJSON_GetObjectItem(devContent,
 										"state");
 								if (devstate != NULL) {
 									devState = devstate->type;
-									printf("Dev state is %d\n", devState);
 									if (devState) {
 										gpio16_output_set(0);
 									} else {
@@ -232,18 +258,14 @@ void TcpRecvCb(void *arg, char *pdata, unsigned short len) {
 								}
 							}
 						}
-
 					}
 				}
-
-				cJSON_Delete(smpkg);
-
 				devSendState(tcp_server_local);
 			} else {
 
 			}
+			cJSON_Delete(smpkg);
 		}
-
 	}
 }
 void TcpReconnectCb(void *arg, sint8 err) {
@@ -276,8 +298,22 @@ void TcpLocalClient(void* arg) {
 	static esp_tcp tcp;
 	tcp_client.type = ESPCONN_TCP;
 	tcp_client.proto.tcp = &tcp;
-	tcp.remote_port = TCP_SERVER_REMOTE_PORT;
-	memcpy(tcp.remote_ip, tcp_server_ip, sizeof(tcp_server_ip));
+
+	dns_init();
+	char *hostname = "15hq344816.iok.la";
+	struct ip_addr addr;
+	err_t err;
+	if ((err = netconn_gethostbyname(hostname, &(addr))) == 0) {
+		printf("netconn_gethostbyname(%s)==%s\n", hostname,
+				inet_ntoa((struct in_addr ) { addr.addr }));
+		char *addrs = (char *) &addr.addr;
+		memcpy(tcp.remote_ip, addrs, sizeof(addrs));
+		tcp.remote_port = 22122;
+	} else {
+		printf("netconn_gethostbyname(%s)==%i\n", hostname, (int) (err));
+		memcpy(tcp.remote_ip, tcp_server_ip, sizeof(tcp_server_ip));
+		tcp.remote_port = TCP_SERVER_REMOTE_PORT;
+	}
 	espconn_regist_connectcb(&tcp_client, TcpClientConnect);
 	espconn_regist_recvcb(&tcp_client, TcpRecvCb);
 	espconn_regist_reconcb(&tcp_client, TcpReconnectCb);
@@ -288,8 +324,7 @@ void TcpLocalClient(void* arg) {
 			tcp_client.proto.tcp->remote_ip[1],
 			tcp_client.proto.tcp->remote_ip[2],
 			tcp_client.proto.tcp->remote_ip[3],
-			tcp_client.proto.tcp->remote_port\
-);
+			tcp_client.proto.tcp->remote_port);
 	espconn_connect(&tcp_client);
 	vTaskDelete(NULL);
 }

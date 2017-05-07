@@ -24,6 +24,10 @@
 
 #ifndef __USER_CONFIG_H__
 #define __USER_CONFIG_H__
-
+#define WEB_SERVICE 1
+typedef struct WiFi {
+	char *ssid;
+	char *password;
+} WiFi;
 #endif
 
